@@ -1,29 +1,62 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { PrismaNeon } from '@prisma/adapter-neon';
 import { PrismaClient } from '@prisma/client';
-import ws from 'ws';
 
-// Sets up WebSocket connections, which enables Neon to use WebSocket communication.
-neonConfig.webSocketConstructor = ws;
-const connectionString = `${process.env.DATABASE_URL}`;
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_AUTH_ENABLED === 'true';
 
-// Creates a new connection pool using the provided connection string, allowing multiple concurrent connections.
-const pool = new Pool({ connectionString });
+function createPrisma() {
+  if (isDemoMode) {
+    // In demo mode return a Proxy that lazily throws on any DB call
+    // so that importing this module never attempts a real connection.
+    return new Proxy({} as any, {
+      get(_target, prop) {
+        // Allow $extends so the chained call below doesn't explode
+        if (prop === '$extends') {
+          return (ext: any) =>
+            new Proxy({} as any, {
+              get(_t, p) {
+                if (typeof p === 'string') {
+                  return new Proxy(() => {}, {
+                    get() {
+                      return () => {
+                        throw new Error(`[demo-mode] prisma.${String(p)} is not available without a database`);
+                      };
+                    },
+                    apply() {
+                      throw new Error(`[demo-mode] prisma is not available without a database`);
+                    },
+                  });
+                }
+              },
+            });
+        }
+        return undefined;
+      },
+    });
+  }
 
-// Instantiates the Prisma adapter using the Neon connection pool to handle the connection between Prisma and Neon.
-const adapter = new PrismaNeon(pool);
+  // --- Real database connection (production / dev with DB) ---
+  const { Pool, neonConfig } = require('@neondatabase/serverless');
+  const { PrismaNeon } = require('@prisma/adapter-neon');
+  const ws = require('ws');
+
+  neonConfig.webSocketConstructor = ws;
+  const connectionString = `${process.env.DATABASE_URL}`;
+  const pool = new Pool({ connectionString });
+  const adapter = new PrismaNeon(pool);
+
+  return new PrismaClient({ adapter });
+}
 
 // Extends the PrismaClient with a custom result transformer to convert the price and rating fields to strings.
-export const prisma = new PrismaClient({ adapter }).$extends({
+export const prisma = (createPrisma() as PrismaClient).$extends({
   result: {
     product: {
       price: {
-        compute(product) {
+        compute(product: any) {
           return product.price.toString();
         },
       },
       rating: {
-        compute(product) {
+        compute(product: any) {
           return product.rating.toString();
         },
       },
@@ -31,25 +64,25 @@ export const prisma = new PrismaClient({ adapter }).$extends({
     cart: {
       itemsPrice: {
         needs: { itemsPrice: true },
-        compute(cart) {
+        compute(cart: any) {
           return cart.itemsPrice.toString();
         },
       },
       shippingPrice: {
         needs: { shippingPrice: true },
-        compute(cart) {
+        compute(cart: any) {
           return cart.shippingPrice.toString();
         },
       },
       taxPrice: {
         needs: { taxPrice: true },
-        compute(cart) {
+        compute(cart: any) {
           return cart.taxPrice.toString();
         },
       },
       totalPrice: {
         needs: { totalPrice: true },
-        compute(cart) {
+        compute(cart: any) {
           return cart.totalPrice.toString();
         },
       },
@@ -57,32 +90,32 @@ export const prisma = new PrismaClient({ adapter }).$extends({
     order: {
       itemsPrice: {
         needs: { itemsPrice: true },
-        compute(cart) {
+        compute(cart: any) {
           return cart.itemsPrice.toString();
         },
       },
       shippingPrice: {
         needs: { shippingPrice: true },
-        compute(cart) {
+        compute(cart: any) {
           return cart.shippingPrice.toString();
         },
       },
       taxPrice: {
         needs: { taxPrice: true },
-        compute(cart) {
+        compute(cart: any) {
           return cart.taxPrice.toString();
         },
       },
       totalPrice: {
         needs: { totalPrice: true },
-        compute(cart) {
+        compute(cart: any) {
           return cart.totalPrice.toString();
         },
       },
     },
     orderItem: {
       price: {
-        compute(cart) {
+        compute(cart: any) {
           return cart.price.toString();
         },
       },

@@ -7,6 +7,8 @@ import { compare } from './lib/encrypt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import sampleData from '@/db/sample-data';
 
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_AUTH_ENABLED === 'true';
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   pages: {
@@ -17,7 +19,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: 'jwt' as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  adapter: PrismaAdapter(prisma),
+  // Only use PrismaAdapter when we have a real database
+  ...(isDemoMode ? {} : { adapter: PrismaAdapter(prisma) }),
   providers: [
     CredentialsProvider({
       credentials: {
@@ -31,7 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Demo accounts are checked first so demo login never waits for or
         // depends on a database connection. Keep this disabled in production.
-        if (process.env.NEXT_PUBLIC_DEMO_AUTH_ENABLED === 'true') {
+        if (isDemoMode) {
           const sampleUser = sampleData.users.find(
             (user) =>
               user.username.toLowerCase() === account.toLowerCase() &&
@@ -49,6 +52,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               role: sampleUser.role,
             };
           }
+          // In demo mode, don't fall through to DB
+          return null;
         }
 
         // Try find user in database
@@ -107,16 +112,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (user.name === 'NO_NAME') {
           token.name = user.email!.split('@')[0];
 
-          try {
-            // Update database to reflect the token name
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { name: token.name },
-            });
-          } catch {}
+          if (!isDemoMode) {
+            try {
+              // Update database to reflect the token name
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { name: token.name },
+              });
+            } catch {}
+          }
         }
 
-        if (trigger === 'signIn' || trigger === 'signUp') {
+        if (!isDemoMode && (trigger === 'signIn' || trigger === 'signUp')) {
           try {
             const cookiesObject = await cookies();
             const sessionCartId = cookiesObject.get('sessionCartId')?.value;
