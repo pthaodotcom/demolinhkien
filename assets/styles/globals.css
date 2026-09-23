@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .wrapper {
+    @apply max-w-7xl lg:mx-auto p-5 md:px-10 w-full;
+  }
+
+  .flex-start {
+    @apply flex justify-start items-center;
+  }
+  .flex-center {
+    @apply flex justify-center items-center;
+  }
+
+  .flex-between {
+    @apply flex justify-between items-center;
+  }
+
+  .h1-bold {
+    @apply font-bold text-3xl lg:text-4xl;
+  }
+
+  .h2-bold {
+    @apply font-bold text-2xl lg:text-3xl;
+  }
+
+  .h3-bold {
+    @apply font-bold text-xl lg:text-2xl;
+  }
+}
+
+@layer base {
+  :root {
+    /* Navy (primary) – derived from logo blue */
+    --primary: 213 80% 25%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Background – warm white */
+    --background: 210 20% 98%;
+    --foreground: 220 30% 15%;
+
+    /* Card – clean white */
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 15%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 15%;
+
+    /* Secondary – light blue tint */
+    --secondary: 210 50% 95%;
+    --secondary-foreground: 213 80% 25%;
+
+    /* Muted */
+    --muted: 210 30% 94%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent – golden orange from logo */
+    --accent: 35 92% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive – red */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders & inputs */
+    --border: 214 25% 88%;
+    --input: 214 25% 88%;
+    --ring: 213 80% 40%;
+
+    /* Charts */
+    --chart-1: 213 80% 45%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 35 92% 52%;
+    --chart-4: 160 60% 45%;
+    --chart-5: 280 65% 60%;
+
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Uploadthing button text override */
+.upload-field .text-white {
+  color: #000 !important;
+}
+
+@keyframes brand-marquee {
+  to { transform: translateX(-50%); }
+}
+
+.brand-marquee {
+  animation: brand-marquee 35s linear infinite;
+}
+
+.brand-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-marquee { animation: none; }
+}
